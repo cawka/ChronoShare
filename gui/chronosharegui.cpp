@@ -171,6 +171,21 @@ ChronoShareGui::startBackend(bool restart /*=false*/)
   m_watcher.reset(new FsWatcher(*m_ioService, realPathToFolder.string().c_str(),
                                 bind(&Dispatcher::Did_LocalFile_AddOrModify, m_dispatcher.get(), _1),
                                 bind(&Dispatcher::Did_LocalFile_Delete, m_dispatcher.get(), _1)));
+  try {
+    m_ioSerciceManager = new IoServiceManager(*m_ioService);
+    m_NetworkThread = std::thread(&IoServiceManager::run, m_ioSerciceManager);
+  }
+  catch (std::exception& e) {
+    _LOG_ERROR("Start IO service or Face failed");
+    openWarningMessageBox("", "WARNING: Cannot allocate thread for face and io_service!",
+                          QString("Starting chronoshare failed"
+                                  "Exception caused: %1")
+                            .arg(e.what()));
+    // stop filewatching ASAP
+    m_watcher.reset();
+    m_dispatcher.reset();
+    return;
+  }
 
   if (m_httpServer != 0) {
     // no need to restart webserver if it already exists
@@ -186,15 +201,11 @@ ChronoShareGui::startBackend(bool restart /*=false*/)
     catch (std::exception& e) {
       _LOG_ERROR("Start http server failed");
       m_httpServer = 0; // just to make sure
-      QMessageBox msgBox;
-      msgBox.setText("WARNING: Cannot start http server!");
-      msgBox.setIcon(QMessageBox::Warning);
-      msgBox.setInformativeText(
-        QString("Starting http server failed. You will not be able to check history from web "
-                "brower. Exception caused: %1")
-          .arg(e.what()));
-      msgBox.setStandardButtons(QMessageBox::Ok);
-      msgBox.exec();
+      openWarningMessageBox("WARNING", "WARNING: Cannot start http server!",
+                            QString("Starting http server failed. You will "
+                                    "not be able to check history from web "
+                                    "brower. Exception caused: %1")
+                              .arg(e.what()));
     }
   }
   else {
@@ -213,6 +224,12 @@ ChronoShareGui::~ChronoShareGui()
 
   // stop dispatcher ASAP, but after watcher to prevent triggering callbacks on the deleted object
   m_dispatcher.reset();
+
+  m_ioServiceWork.reset();
+  m_ioSerciceManager->handle_stop();
+  m_chronoshareThread.join();
+  m_NetworkThread.join();
+  delete m_ioSerciceManager;
 
   if (m_httpServer != 0) {
     m_httpServer->handle_stop();
@@ -269,6 +286,20 @@ ChronoShareGui::openMessageBox(QString title, QString text, QString infotext)
   messageBox.setInformativeText(infotext);
 
   messageBox.setIconPixmap(QPixmap(ICON_BIG_FILE));
+
+  messageBox.exec();
+}
+
+void
+ChronoShareGui::openWarningMessageBox(QString title, QString text, QString infotext)
+{
+  QMessageBox messageBox(this);
+  messageBox.setWindowTitle(title);
+  messageBox.setText(text);
+  messageBox.setInformativeText(infotext);
+
+  messageBox.setIcon(QMessageBox::Warning);
+  messageBox.setStandardButtons(QMessageBox::Ok);
 
   messageBox.exec();
 }
