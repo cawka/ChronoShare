@@ -30,7 +30,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("Dispatcher");
+INIT_LOGGER("Dispatcher")
 
 namespace fs = boost::filesystem;
 

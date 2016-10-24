@@ -131,6 +131,28 @@ digestFromFile(const boost::filesystem::path& filename)
   return digest.computeDigest();
 }
 
+ndn::Buffer
+digestFromString(std::string hash) {
+  using namespace CryptoPP;
+
+  std::string digestStr;
+  StringSource(hash, true,
+                new HexDecoder(new StringSink(digestStr)));
+  ndn::Buffer digest(reinterpret_cast<const uint8_t*>(digestStr.c_str()), digestStr.size());
+
+  return digest;
+}
+
+std::string
+digestToString(const ndn::Buffer &digest) {
+  using namespace CryptoPP;
+
+  std::string hash;
+  StringSource(digest.buf(), digest.size(), true,
+               new HexEncoder(new StringSink(hash), false));
+  return hash;
+}
+
 } // namespace tests
 } // namespace chronoshare
 } // namespace ndn

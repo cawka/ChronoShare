@@ -171,6 +171,16 @@ setNameComponent(Packet& packet, ssize_t index, const A& ...a)
 ndn::ConstBufferPtr
 digestFromFile(const boost::filesystem::path& filename);
 
+/** \brief convert string to digest
+ */
+ndn::Buffer
+digestFromString(std::string hash);
+
+/** \brief convert digest to string
+ */
+std::string
+digestToString(const ndn::Buffer &digest);
+
 } // namespace tests
 } // namespace chronoshare
 } // namespace ndn
