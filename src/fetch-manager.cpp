@@ -26,7 +26,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("FetchManager");
+INIT_LOGGER("FetchManager")
 
 // The disposer object function
 struct fetcher_disposer

@@ -28,7 +28,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("Fetcher");
+INIT_LOGGER("Fetcher")
 
 Fetcher::Fetcher(Face& face, const SegmentCallback& segmentCallback,
                  const FinishCallback& finishCallback, OnFetchCompleteCallback onFetchComplete,

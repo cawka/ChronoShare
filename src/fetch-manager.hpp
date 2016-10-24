@@ -29,6 +29,7 @@
 #include <ndn-cxx/util/scheduler.hpp>
 
 #include <list>
+#include <mutex>
 
 namespace ndn {
 namespace chronoshare {
