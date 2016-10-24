@@ -21,6 +21,7 @@ def build(bld):
                                       'unit-tests/action-log.t.cpp',
                                       'unit-tests/object-manager.t.cpp',
                                       'unit-tests/fetch*.t.cpp',
+                                      'unit-tests/serve-and-fetch.t.cpp',
                                       ],
                                      excl=['main.cpp']),
             use='unit-tests-main chronoshare',

@@ -25,7 +25,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-INIT_LOGGER("ContentServer");
+INIT_LOGGER("ContentServer")
 
 namespace ndn {
 namespace chronoshare {

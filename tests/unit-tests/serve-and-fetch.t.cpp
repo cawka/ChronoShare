@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -18,13 +18,10 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#include "ccnx-common.hpp"
-#include "ccnx-wrapper.hpp"
 #include "content-server.hpp"
 #include "fetch-manager.hpp"
 #include "object-db.hpp"
 #include "object-manager.hpp"
-#include "scheduler.hpp"
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/test/unit_test.hpp>
@@ -35,23 +32,26 @@
 #include <ctime>
 #include <stdio.h>
 
-#include "logging.hpp"
+#include "test-common.hpp"
 
-INIT_LOGGER("Test.ServerAndFetch");
+INIT_LOGGER("Test.ServerAndFetch")
 
-using namespace Ndnx;
 using namespace std;
 using namespace boost;
 using namespace boost::filesystem;
+
+
+namespace ndn {
+namespace chronoshare {
 
 BOOST_AUTO_TEST_SUITE(TestServeAndFetch)
 
 path root("test-server-and-fetch");
 path filePath = root / "random-file";
 unsigned char magic = 'm';
-int repeat = 1024 * 400;
-mutex mut;
-condition_variable cond;
+int repeat = 1024 * 40;
+boost::mutex mut;
+boost::condition_variable cond;
 bool finished;
 int ack;
 
@@ -93,21 +93,40 @@ simpleMap(const Name& deviceName)
 }
 
 void
-segmentCallback(const Name& deviceName, const Name& baseName, uint64_t seq, PcoPtr pco)
+listen(shared_ptr<Face> face, std::string name)
+{
+  _LOG_DEBUG("I'm listening!!!"
+             << "for Name "
+             << name);
+  //  while(1) {
+  face->processEvents(ndn::time::milliseconds::zero(), true);
+  //  }
+  _LOG_DEBUG("Listening Over!!!"
+             << "for Name "
+             << name);
+}
+
+void
+segmentCallback(const Name& deviceName, const Name& baseName, uint64_t seq,
+                ndn::shared_ptr<ndn::Data> data)
 {
   ack++;
-  Bytes co = pco->content();
-  int size = co.size();
+  ndn::Block block = data->getContent();
+
+  int size = block.value_size();
+  const uint8_t* co = block.value();
   for (int i = 0; i < size; i++) {
     BOOST_CHECK_EQUAL(co[i], magic);
   }
+
+  _LOG_DEBUG("I'm called!!! segmentCallback!! size " << size << " ack times:" << ack);
 }
 
 void
 finishCallback(Name& deviceName, Name& baseName)
 {
   BOOST_CHECK_EQUAL(ack, repeat / 1024);
-  unique_lock<mutex> lock(mut);
+  boost::unique_lock<boost::mutex> lock(mut);
   finished = true;
   cond.notify_one();
 }
@@ -119,9 +138,11 @@ BOOST_AUTO_TEST_CASE(TestServeAndFetch)
   _LOG_DEBUG("Setting up test environment ...");
   setup();
 
-  NdnxWrapperPtr ndnx_serve = make_shared<NdnxWrapper>();
+  shared_ptr<Face> face_serve = make_shared<Face>();
+  boost::thread serve(listen, face_serve, "serve");
   usleep(1000);
-  NdnxWrapperPtr ndnx_fetch = make_shared<NdnxWrapper>();
+  shared_ptr<Face> face_fetch = make_shared<Face>();
+  boost::thread fetch(listen, face_fetch, "fetch");
 
   Name deviceName("/test/device");
   Name localPrefix("/local");
@@ -129,28 +150,29 @@ BOOST_AUTO_TEST_CASE(TestServeAndFetch)
 
   const string APPNAME = "test-chronoshare";
 
-  time_t start = time(NULL);
+  time_t start = std::time(NULL);
   _LOG_DEBUG("At time " << start << ", publish local file to database, this is extremely slow ...");
   // publish file to db
-  ObjectManager om(ndnx_serve, root, APPNAME);
-  tuple<HashPtr, size_t> pub = om.localFileToObjects(filePath, deviceName);
-  time_t end = time(NULL);
+  ObjectManager om(*face_serve, root, APPNAME);
+  auto pub = om.localFileToObjects(filePath, deviceName);
+  time_t end = std::time(NULL);
   _LOG_DEBUG("At time " << end << ", publish finally finished, used " << end - start
                         << " seconds ...");
 
   ActionLogPtr dummyLog;
-  ContentServer server(ndnx_serve, dummyLog, root, deviceName, "pentagon's secrets", APPNAME, 5);
+  ContentServer server(*face_serve, dummyLog, root, deviceName, "pentagon's secrets", APPNAME, 5);
   server.registerPrefix(localPrefix);
   server.registerPrefix(broadcastPrefix);
 
-  FetchManager fm(ccnx_fetch, bind(simpleMap, _1), Name("/local/broadcast"));
-  HashPtr hash = pub.get<0>();
-  Name baseName = Name("/")(deviceName)(APPNAME)("file")(hash->GetHash(), hash->GetHashBytes());
+  FetchManager fm(*face_fetch, bind(simpleMap, _1), Name("/local/broadcast"));
+  ConstBufferPtr hash = std::get<0>(pub);
+  Name baseName = Name(deviceName);
+  baseName.append(APPNAME).append("file").appendImplicitSha256Digest(hash);
 
   fm.Enqueue(deviceName, baseName, bind(segmentCallback, _1, _2, _3, _4),
-             bind(finishCallback, _1, _2), 0, pub.get<1>() - 1);
+             bind(finishCallback, _1, _2), 0, std::get<1>(pub) - 1);
 
-  unique_lock<mutex> lock(mut);
+  boost::unique_lock<boost::mutex> lock(mut);
   system_time timeout = get_system_time() + posix_time::milliseconds(5000);
   while (!finished) {
     if (!cond.timed_wait(lock, timeout)) {
@@ -158,13 +180,17 @@ BOOST_AUTO_TEST_CASE(TestServeAndFetch)
       break;
     }
   }
-  ccnx_fetch->shutdown();
-  ccnx_serve->shutdown();
+  face_fetch->shutdown();
+  face_serve->shutdown();
 
   _LOG_DEBUG("Finish");
   usleep(100000);
+  //  sleep(2);
 
   teardown();
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+} // namespace chronoshare
+} // namespace ndn
