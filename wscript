@@ -121,15 +121,16 @@ def build(bld):
         )
     Logs.error("Most of Chronoshare source compilation is temporary disabled")
 
-    # fs_watcher = bld(
-    #     features=['qt5', 'cxx'],
-    #     target='fs-watcher',
-    #     defines='WAF',
-    #     source=bld.path.ant_glob('fs-watcher/*.cpp'),
-    #     use='chronoshare QT5CORE',
-    #     includes='fs-watcher',
-    #     export_includes='fs-watcher',
-    #     )
+    fs_watcher = bld(
+        features=['qt5', 'cxx'],
+        target='fs-watcher',
+        defines='WAF',
+        source=bld.path.ant_glob('fs-watcher/*.cpp'),
+        use='chronoshare QT5CORE',
+        moc='fs-watcher/fs-watcher.hpp',
+        includes='fs-watcher',
+        export_includes='fs-watcher',
+        )
     Logs.error("fs-watcher compilation is temporary disabled")
 
     http_server = bld(
@@ -146,7 +147,7 @@ def build(bld):
 #         defines = "WAF",
 #         source = bld.path.ant_glob(['gui/*.cpp', 'gui/images.qrc']),
 #         includes = "fs-watcher gui src adhoc server . ",
-#         use = "fs_watcher chronoshare http_server QT5CORE QT5GUI QT5WIDGETS",
+#         use = "fs-watcher chronoshare http_server QT5CORE QT5GUI QT5WIDGETS",
 
 #         html_resources = bld.path.find_dir("gui/html").ant_glob([
 #                 '**/*.js', '**/*.png', '**/*.css',

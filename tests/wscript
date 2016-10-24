@@ -15,7 +15,7 @@ def build(bld):
 
     unit_tests = bld.program(
             target='../unit-tests',
-            features='cxx cxxprogram',
+            features='qt5 cxx cxxprogram',
             source=bld.path.ant_glob(['*.cpp',
                                       'unit-tests/sync-*.t.cpp',
                                       'unit-tests/action-log.t.cpp',
@@ -23,12 +23,13 @@ def build(bld):
                                       'unit-tests/fetch*.t.cpp',
                                       'unit-tests/serve-and-fetch.t.cpp',
                                       'unit-tests/dispatcher.t.cpp',
+                                      'unit-tests/fs-watcher.t.cpp',
                                       ],
                                      excl=['main.cpp']),
-            use='unit-tests-main chronoshare',
+            use='unit-tests-main chronoshare fs-watcher QT5CORE QT5GUI QT5WIDGETS',
             install_path=None,
             defines='UNIT_TEST_CONFIG_PATH=\"%s/tmp-files/\"' % (bld.bldnode),
-            includes='.. ../src .',
+            includes='.. ../src ../fs-watcher .',
           )
 
     Logs.error("Most unit tests are temporary disabled")
