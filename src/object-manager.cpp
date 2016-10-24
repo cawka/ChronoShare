@@ -32,7 +32,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("Object.Manager");
+INIT_LOGGER("Object.Manager")
 
 namespace fs = boost::filesystem;
 using util::Sha256;

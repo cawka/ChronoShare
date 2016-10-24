@@ -28,7 +28,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("Object.Db");
+INIT_LOGGER("Object.Db")
 
 namespace fs = boost::filesystem;
 

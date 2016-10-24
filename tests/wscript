@@ -19,6 +19,7 @@ def build(bld):
             source=bld.path.ant_glob(['*.cpp',
                                       'unit-tests/sync-*.t.cpp',
                                       'unit-tests/action-log.t.cpp',
+                                      'unit-tests/object-manager.t.cpp',
                                       ],
                                      excl=['main.cpp']),
             use='unit-tests-main chronoshare',
