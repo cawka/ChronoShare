@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -56,7 +56,7 @@ operator<<(std::ostream& os, const SyncStateMsgPtr& msg)
   return os;
 }
 
-} // chronoshare
-} // ndn
+} // namespace chronoshare
+} // namespace ndn
 
 #endif // CHRONOSHARE_SRC_SYNC_STATE_HELPER_HPP
