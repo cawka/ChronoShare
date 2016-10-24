@@ -27,7 +27,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("ActionLog");
+INIT_LOGGER("ActionLog")
 
 const std::string INIT_DATABASE = "\
 CREATE TABLE ActionLog (                                                \n\
