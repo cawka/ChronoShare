@@ -107,6 +107,8 @@ def build(bld):
         source=bld.path.ant_glob(['src/*.proto',
                                   'src/db-helper.cpp',
                                   'src/sync-*.cpp',
+                                  'src/file-state.cpp',
+                                  'src/action-log.cpp',
                                   ]),
         use='core-objects adhoc BOOST LOG4CXX NDN_CXX TINYXML SQLITE3',
         includes="src",
