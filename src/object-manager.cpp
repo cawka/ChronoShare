@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -19,31 +19,28 @@
  */
 
 #include "object-manager.hpp"
-#include "ccnx-common.hpp"
-#include "ccnx-name.hpp"
-#include "ccnx-pco.hpp"
-#include "logging.hpp"
 #include "object-db.hpp"
+#include "core/logging.hpp"
 
 #include <sys/stat.h>
 
 #include <boost/filesystem/fstream.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/throw_exception.hpp>
-#include <fstream>
+
+#include <ndn-cxx/util/string-helper.hpp>
+
+namespace ndn {
+namespace chronoshare {
 
 INIT_LOGGER("Object.Manager");
 
-using namespace Ndnx;
-using namespace boost;
-using namespace std;
 namespace fs = boost::filesystem;
+using util::Sha256;
 
 const int MAX_FILE_SEGMENT_SIZE = 1024;
 
-ObjectManager::ObjectManager(Ccnx::CcnxWrapperPtr ccnx, const fs::path& folder,
-                             const std::string& appName)
-  : m_ccnx(ccnx)
+ObjectManager::ObjectManager(Face& face, const fs::path& folder, const std::string& appName)
+  : m_face(face)
   , m_folder(folder / ".chronoshare")
   , m_appName(appName)
 {
@@ -55,11 +52,12 @@ ObjectManager::~ObjectManager()
 }
 
 // /<devicename>/<appname>/file/<hash>/<segment>
-boost::tuple<HashPtr /*object-db name*/, size_t /* number of segments*/>
-ObjectManager::localFileToObjects(const fs::path& file, const Ccnx::Name& deviceName)
+std::tuple<ConstBufferPtr /*object-db name*/, size_t /* number of segments*/>
+ObjectManager::localFileToObjects(const fs::path& file, const Name& deviceName)
 {
-  HashPtr fileHash = Hash::FromFileContent(file);
-  ObjectDb fileDb(m_folder, lexical_cast<string>(*fileHash));
+  fs::ifstream input1(file, std::ios::in | std::ios::binary);
+  Sha256 fileHash(input1);
+  ObjectDb fileDb(m_folder, fileHash.toString());
 
   fs::ifstream iff(file, std::ios::in | std::ios::binary);
   sqlite3_int64 segment = 0;
@@ -71,36 +69,53 @@ ObjectManager::localFileToObjects(const fs::path& file, const Ccnx::Name& device
       break;
     }
 
-    Name name = Name("/")(deviceName)(m_appName)("file")(fileHash->GetHash(),
-                                                         fileHash->GetHashBytes())(segment);
+    Name name = Name("/");
+    name.append(deviceName)
+      .append(m_appName)
+      .append("file")
+      .appendImplicitSha256Digest(fileHash.computeDigest())
+      .appendNumber(segment);
 
-    // cout << *fileHash << endl;
-    // cout << name << endl;
-    //_LOG_DEBUG ("Read " << iff.gcount () << " from " << file << " for segment " << segment);
+    shared_ptr<Data> data = make_shared<Data>();
+    data->setName(name);
+    data->setFreshnessPeriod(time::seconds(60));
+    data->setContent(reinterpret_cast<const uint8_t*>(&buf), iff.gcount());
+    m_keyChain.sign(*data);
+    m_face.put(*data);
 
-    Bytes data = m_ccnx->createContentObject(name, buf, iff.gcount());
-    fileDb.saveContentObject(deviceName, segment, data);
+    fileDb.saveContentObject(deviceName, segment, *data);
 
     segment++;
   }
   if (segment == 0) // handle empty files
   {
-    Name name =
-      Name("/")(m_appName)("file")(fileHash->GetHash(), fileHash->GetHashBytes())(deviceName)(0);
-    Bytes data = m_ccnx->createContentObject(name, 0, 0);
-    fileDb.saveContentObject(deviceName, 0, data);
+    Name name = Name("/");
+    name.append(m_appName)
+      .append("file")
+      .appendImplicitSha256Digest(fileHash.computeDigest())
+      .append(deviceName)
+      .appendNumber(0);
+
+    shared_ptr<Data> data = make_shared<Data>();
+    data->setName(name);
+    data->setFreshnessPeriod(time::seconds(0));
+    data->setContent(0, 0);
+    m_keyChain.sign(*data);
+    m_face.put(*data);
+
+    fileDb.saveContentObject(deviceName, 0, *data);
 
     segment++;
   }
 
-  return make_tuple(fileHash, segment);
+  return std::make_tuple(fileHash.computeDigest(), segment);
 }
 
 bool
-ObjectManager::objectsToLocalFile(/*in*/ const Ccnx::Name& deviceName, /*in*/ const Hash& fileHash,
+ObjectManager::objectsToLocalFile(/*in*/ const Name& deviceName, /*in*/ const Buffer& fileHash,
                                   /*out*/ const fs::path& file)
 {
-  string hashStr = lexical_cast<string>(fileHash);
+  std::string hashStr = toHex(fileHash);
   if (!ObjectDb::DoesExist(m_folder, deviceName, hashStr)) {
     _LOG_ERROR("ObjectDb for [" << m_folder << ", " << deviceName << ", " << hashStr
                                 << "] does not exist or not all segments are available");
@@ -115,20 +130,20 @@ ObjectManager::objectsToLocalFile(/*in*/ const Ccnx::Name& deviceName, /*in*/ co
   ObjectDb fileDb(m_folder, hashStr);
 
   sqlite3_int64 segment = 0;
-  BytesPtr bytes = fileDb.fetchSegment(deviceName, 0);
+  BufferPtr bytes = fileDb.fetchSegment(deviceName, 0);
   while (bytes) {
-    ParsedContentObject obj(*bytes);
-    BytesPtr data = obj.contentPtr();
-
-    if (data) {
-      off.write(reinterpret_cast<const char*>(head(*data)), data->size());
+    if (bytes->buf()) {
+      off.write(reinterpret_cast<const char*>(bytes->buf()), bytes->size());
     }
 
     segment++;
     bytes = fileDb.fetchSegment(deviceName, segment);
   }
 
-  // permission and timestamp should be assigned somewhere else (ObjectManager has no idea about that)
+  // permission and timestamp should be assigned somewhere else(ObjectManager has no idea about that)
 
   return true;
 }
+
+} // namespace chronoshare
+} // namespace ndn
