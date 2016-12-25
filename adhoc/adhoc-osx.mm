@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -19,14 +19,11 @@
  */
 
 #include "adhoc.hpp"
-#include "core/chronoshare-config.hpp"
 
 #if (__APPLE__ && HAVE_COREWLAN)
 
-#include "logging.hpp"
+#include "core/logging.hpp"
 #include <sstream>
-
-using namespace std;
 
 INIT_LOGGER("Adhoc.OSX");
 
@@ -34,6 +31,9 @@ INIT_LOGGER("Adhoc.OSX");
 #import <CoreWLAN/CoreWLAN.h>
 #import <CoreWLAN/CoreWLANConstants.h>
 #import <CoreWLAN/CoreWLANTypes.h>
+
+namespace ndn {
+namespace chronoshare {
 
 const NSUInteger g_channel = 11;
 static NSString* g_priorNetwork = 0;
@@ -75,8 +75,8 @@ Adhoc::CreateAdhoc()
 
   // should do a better job later, when Ndnx::Control will be implemented
 
-  ostringstream cmd;
-  cmd << CCNX_PATH << "/bin/ccndc add / udp 169.254.255.255";
+  std::ostringstream cmd;
+  //cmd << CCNX_PATH << "/bin/ccndc add / udp 169.254.255.255";
   int ret = system(cmd.str().c_str());
   if (ret == 0) {
     return true;
@@ -122,5 +122,8 @@ Adhoc::DestroyAdhoc()
   // ok. this trick works.  if just disassociate, then it will stay OFF
   // setting power OFF/ON trick the system to reconnect to default WiFi
 }
+
+} // namespace chronoshare
+} // namespace ndn
 
 #endif // ADHOC_SUPPORTED

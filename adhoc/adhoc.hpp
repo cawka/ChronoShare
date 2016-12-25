@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2013-2016, Regents of the University of California.
+ * Copyright (c) 2013-2017, Regents of the University of California.
  *
  * This file is part of ChronoShare, a decentralized file sharing application over NDN.
  *
@@ -18,16 +18,19 @@
  * See AUTHORS.md for complete list of ChronoShare authors and contributors.
  */
 
-#ifndef CHRONOSHARE_ADHOC_H
-#define CHRONOSHARE_ADHOC_H
+#ifndef CHRONOSHARE_ADHOC_ADHOC_HPP
+#define CHRONOSHARE_ADHOC_ADHOC_HPP
 
-#include "core/chronoshare-config.hpp"
+#include "core/chronoshare-common.hpp"
 
 #if (__APPLE__ && HAVE_COREWLAN)
 #define ADHOC_SUPPORTED 1
 #endif
 
 #ifdef ADHOC_SUPPORTED
+
+namespace ndn {
+namespace chronoshare {
 
 class Adhoc
 {
@@ -39,6 +42,9 @@ public:
   DestroyAdhoc();
 };
 
-#endif
+} // namespace chronoshare
+} // namespace ndn
 
-#endif // CHRONOSHARE_ADHOC_H
+#endif // ADHOC_SUPPORTED
+
+#endif // CHRONOSHARE_ADHOC_ADHOC_HPP
