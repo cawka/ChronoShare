@@ -32,7 +32,7 @@
 namespace ndn {
 namespace chronoshare {
 
-INIT_LOGGER("StateServer");
+INIT_LOGGER("StateServer")
 
 namespace fs = boost::filesystem;
 

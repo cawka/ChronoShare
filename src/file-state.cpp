@@ -21,7 +21,7 @@
 #include "file-state.hpp"
 #include "core/logging.hpp"
 
-INIT_LOGGER("FileState");
+INIT_LOGGER("FileState")
 
 namespace ndn {
 namespace chronoshare {

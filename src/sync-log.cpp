@@ -29,7 +29,7 @@ namespace chronoshare {
 
 using util::Sqlite3Statement;
 
-INIT_LOGGER("Sync.Log");
+INIT_LOGGER("Sync.Log")
 
 // static void
 // xTrace(void*, const char* q)

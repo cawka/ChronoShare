@@ -19,6 +19,9 @@
 
 #include "core/chronoshare-config.hpp"
 
+#include <boost/version.hpp>
+#include <boost/filesystem.hpp>
+
 #include "test-common.hpp"
 
 namespace ndn {
