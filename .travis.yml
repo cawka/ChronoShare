@@ -1,0 +1,28 @@
+sudo: required
+language: generic
+env:
+  global:
+    - JOB_NAME=limited-build
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+      env:
+        - CXX=g++
+        - NODE_LABELS="Linux Ubuntu Ubuntu-14.04"
+    - os: linux
+      dist: trusty
+      env:
+        - CXX=clang++
+        - NODE_LABELS="Linux Ubuntu Ubuntu-14.04"
+    - os: osx
+      osx_image: xcode8.2
+      env:
+        - CXX=clang++
+        - NODE_LABELS="OSX OSX-10.12"
+notifications:
+  email:
+    on_success: always
+    on_failure: always
+script:
+  - ./.jenkins
