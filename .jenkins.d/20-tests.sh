@@ -6,6 +6,15 @@ source "$JDIR"/util.sh
 
 set -x
 
+# Prepare environment
+rm -Rf ~/.ndn
+
+if has OSX $NODE_LABELS; then
+    security unlock-keychain -p named-data
+fi
+
+ndnsec-keygen "/tmp/jenkins/$NODE_NAME" | ndnsec-install-cert -
+
 BOOST_VERSION=$(python -c "import sys; sys.path.append('build/c4che'); import _cache; print(_cache.BOOST_VERSION_NUMBER);")
 
 ut_log_args() {
@@ -32,5 +41,10 @@ ASAN_OPTIONS+=":strict_string_checks=true"
 ASAN_OPTIONS+=":strip_path_prefix=${PWD}/"
 export ASAN_OPTIONS
 
+# Run NFD and tests
+sudo nfd &
+
 # First run all tests as unprivileged user
 ./build/unit-tests $(ut_log_args)
+
+sudo killall nfd || true

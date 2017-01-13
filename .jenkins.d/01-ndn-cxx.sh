@@ -19,6 +19,7 @@ LATEST_VERSION=$((cd ndn-cxx-latest && git rev-parse HEAD) 2>/dev/null || echo U
 if [[ $INSTALLED_VERSION != $LATEST_VERSION ]]; then
     sudo rm -Rf ndn-cxx
     mv ndn-cxx-latest ndn-cxx
+    sudo rm -Rf NFD NFD-latest
 else
     sudo rm -Rf ndn-cxx-latest
 fi
